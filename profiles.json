@@ -1,0 +1,5 @@
+[
+ {"id":"strict","name":"Строгий","description":"Ресурсы только со своего сайта, соединения и встраивание запрещены. Встроенный JavaScript заблокирован.","directives":{"default-src":["'none'"],"script-src":["'self'"],"style-src":["'self'"],"img-src":["'self'"],"connect-src":["'none'"],"frame-ancestors":["'none'"]}},
+ {"id":"analytics","name":"Для сайта с аналитикой","description":"Учебный список: разрешены скрипты и соединения с analytics.example.com. Замените его доменами вашего сервиса. Приложение не обращается к этому адресу.","directives":{"default-src":["'self'"],"script-src":["'self'","https://analytics.example.com"],"style-src":["'self'"],"img-src":["'self'","https://analytics.example.com"],"connect-src":["'self'","https://analytics.example.com"],"frame-ancestors":["'none'"]}},
+ {"id":"bad","name":"Плохой пример","description":"Широкий default-src, встроенные скрипты и стили, отсутствие защиты от встраивания. Сравните предупреждения со строгим профилем.","directives":{"default-src":["*"],"script-src":["*","'unsafe-inline'"],"style-src":["'self'","'unsafe-inline'"],"img-src":["*"],"connect-src":["*"],"frame-ancestors":null}}
+]

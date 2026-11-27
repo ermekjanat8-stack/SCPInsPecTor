@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {analyze,report} from './analyzer.mjs';import {names,serialize,domainSource,explain} from './builder.mjs';
+test('weak scripts and eval detected',()=>{const p=analyze("script-src * 'unsafe-inline' 'unsafe-eval'");assert.ok(p.findings.filter(f=>f.level==='high').length>=3);});
+test('strong policy avoids warnings',()=>{assert.equal(analyze("default-src 'none'; script-src 'nonce-AAAAAAAAAAAAAAAAAAAAAA==' 'strict-dynamic'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'").findings.filter(f=>f.level!=='info').length,0);});
+test('nonce disables unsafe-inline warning',()=>{assert.ok(!analyze("script-src 'nonce-AAAAAAAAAAAAAAAAAAAAAA==' 'unsafe-inline'").findings.some(f=>f.title.includes('inline JavaScript')));});
+test('duplicate directive keeps first',()=>{const p=analyze("script-src 'none'; script-src *");assert.deepEqual(p.directives['script-src'],["'none'"]);assert.ok(p.findings.some(f=>f.title.includes('Повтор')));});
+test('default-src does not replace base/frame/form',()=>{assert.equal(analyze("default-src 'none'").findings.filter(f=>f.title.startsWith('Отсутствует')).length,3);});
+test('script-src-elem overrides script-src',()=>{assert.ok(analyze("script-src 'none'; script-src-elem *").findings.some(f=>f.title.includes('широкие')));});
+test('report-only and combined policies separate',()=>{const p=report(["script-src *, script-src 'none'"],["default-src 'none'"]);assert.equal(p.policies.length,3);assert.equal(p.policies[2].mode,'report');assert.equal(report([],['']).headerPresent,false);});
+
+test('missing default-src flagged',()=>{assert.ok(analyze("script-src 'self'").findings.some(f=>f.title==='Отсутствует default-src'));});
+test('wildcard fallback keeps explicit script restriction',()=>{const p=analyze("default-src *; script-src 'none'");assert.ok(p.findings.some(f=>f.title.startsWith('default-src *')));assert.ok(!p.findings.some(f=>f.title==='Слишком широкие источники скриптов'));});
+test('domain input rejects directive injection',()=>{for(const v of ["x; script-src *",'https://x.test/path','https://x.test?x=1','x y','<script>','https://x.test:99999'])assert.throws(()=>domainSource(v));assert.equal(domainSource('https://CDN.example.com'),'https://cdn.example.com');assert.equal(domainSource('*.example.com'),'*.example.com');});
+test('builder serialization and fallback',()=>{const state=Object.fromEntries(names.map(n=>[n,null]));state['default-src']=["'none'"];assert.equal(serialize(state),"default-src 'none'");assert.match(explain(state,'img-src'),/Запрещено/);assert.match(explain(state,'frame-ancestors'),/не ограничено/);});
